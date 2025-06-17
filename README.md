@@ -137,14 +137,5 @@ Logs are stored in:
 - `app.log`: Application logs
 - `warehouse_management.log`: Core processing logs
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+## Demo Video
+https://drive.google.com/file/d/1EPAHLgf-8Fs1dvHs47Bw7SLKqPZr8L-6/view?usp=sharing
