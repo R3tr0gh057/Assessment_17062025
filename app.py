@@ -31,20 +31,54 @@ BASEROW_HEADERS = {
     "Content-Type": "application/json"
 }
 
+def get_existing_entries():
+    """Get existing entries from Baserow table."""
+    try:
+        response = requests.get(
+            f"{BASEROW_BASE_URL}/{BASEROW_TABLE_ID}/",
+            headers=BASEROW_HEADERS,
+            params={"user_field_names": "false"}
+        )
+        if response.status_code == 200:
+            return response.json()["results"]
+        return []
+    except Exception as e:
+        logging.error(f"Error fetching existing entries: {str(e)}")
+        return []
+
 def push_to_baserow(df, source_file_name):
     """Push processed data to Baserow table."""
     success_count = 0
     error_count = 0
+    skipped_count = 0
     errors = []
+    
+    # Get existing entries
+    existing_entries = get_existing_entries()
+    today = datetime.now().strftime("%Y-%m-%d")
+    
+    # Create a set of existing SKUs
+    existing_skus = {
+        entry["field_4646908"]
+        for entry in existing_entries
+        if "field_4646908" in entry
+    }
 
     for _, row in df.iterrows():
         try:
+            original_sku = str(row['Original SKU'])
+            
+            # Check for duplicates - if SKU exists in Baserow, skip it
+            if original_sku in existing_skus:
+                skipped_count += 1
+                continue
+                
             # Prepare the data according to Baserow's field IDs
             payload = {
-                "field_4646908": str(row['Original SKU']),  # original_sku
+                "field_4646908": original_sku,  # original_sku
                 "field_4646909": str(row['Mapped MSKU']) if pd.notna(row['Mapped MSKU']) else "",  # mapped_sku
                 "field_4646910": int(float(row['Quantity'])),  # quantity - convert to integer
-                "field_4646918": datetime.now().strftime("%Y-%m-%d"),  # processed_date
+                "field_4646918": today,  # processed_date
                 "field_4646926": "Mapped" if pd.notna(row['Mapped MSKU']) else "Unmapped",  # status (Mapped/Unmapped)
                 "field_4646927": source_file_name  # source_file
             }
@@ -58,9 +92,11 @@ def push_to_baserow(df, source_file_name):
 
             if response.status_code in [200, 201]:
                 success_count += 1
+                # Add to existing SKUs to prevent duplicates within the same batch
+                existing_skus.add(original_sku)
             else:
                 error_count += 1
-                errors.append(f"Error for SKU {row['Original SKU']}: {response.text}")
+                errors.append(f"Error for SKU {original_sku}: {response.text}")
 
         except Exception as e:
             error_count += 1
@@ -69,6 +105,7 @@ def push_to_baserow(df, source_file_name):
     return {
         "success_count": success_count,
         "error_count": error_count,
+        "skipped_count": skipped_count,
         "errors": errors
     }
 
@@ -163,11 +200,13 @@ def main():
                         
                         # Show Baserow upload results
                         st.subheader("Baserow Upload Results")
-                        col1, col2 = st.columns(2)
+                        col1, col2, col3 = st.columns(3)
                         with col1:
                             st.metric("Successfully Uploaded", baserow_results["success_count"])
                         with col2:
                             st.metric("Failed Uploads", baserow_results["error_count"])
+                        with col3:
+                            st.metric("Skipped (Duplicates)", baserow_results["skipped_count"])
                         
                         if baserow_results["errors"]:
                             with st.expander("View Upload Errors"):

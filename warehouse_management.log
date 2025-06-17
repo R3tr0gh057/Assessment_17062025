@@ -6200,3 +6200,105 @@ KeyError: ['sku', 'Quantity']
 2025-06-17 20:38:40,768 - root - WARNING - Invalid MSKU found in sales data: StorageBox_3
 2025-06-17 20:38:40,769 - root - INFO - No rows skipped due to invalid quantities.
 2025-06-17 20:38:40,770 - root - INFO - Processed 48 rows into 7 rows after expansion (skipped 0 invalid quantity rows)
+2025-06-17 20:48:03,250 - warehouse_management - INFO - Successfully loaded all Excel sheets
+2025-06-17 20:48:03,538 - warehouse_management - INFO - Built SKU to MSKU mapping with 3915 entries
+2025-06-17 20:48:03,590 - warehouse_management - INFO - Built combo expansion mapping with 375 entries
+2025-06-17 20:48:03,593 - warehouse_management - INFO - Built active MSKU set with 1011 entries
+2025-06-17 20:48:03,594 - root - WARNING - Invalid MSKU found in sales data: MONEY HEIST A-8_BROWN
+2025-06-17 20:48:03,595 - root - WARNING - Invalid MSKU found in sales data: 69UfqNAh
+2025-06-17 20:48:03,596 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:03,596 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:03,597 - root - WARNING - Invalid MSKU found in sales data: YOU ARE MY SUNSHINE SUN_BROWN
+2025-06-17 20:48:03,598 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:03,598 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:03,599 - root - WARNING - Invalid MSKU found in sales data: 6CKGxkiA
+2025-06-17 20:48:03,600 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:03,601 - root - WARNING - Invalid MSKU found in sales data: La Vie En Rose MB-Black
+2025-06-17 20:48:03,602 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:03,603 - root - WARNING - Invalid MSKU found in sales data: 1617749754_17
+2025-06-17 20:48:03,603 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:03,604 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:03,606 - root - WARNING - Invalid MSKU found in sales data: MH-LA CASA DE PAPEL_BROWN
+2025-06-17 20:48:03,606 - root - WARNING - Invalid MSKU found in sales data: MH_A8_Brown
+2025-06-17 20:48:03,607 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:03,608 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:03,609 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:03,610 - root - WARNING - Invalid MSKU found in sales data: 69UfqNAh
+2025-06-17 20:48:03,611 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:03,612 - root - WARNING - Invalid MSKU found in sales data: YouAreMySunshineMusicBox-Black
+2025-06-17 20:48:03,613 - root - WARNING - Invalid MSKU found in sales data: 69UfqNAh
+2025-06-17 20:48:03,614 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:03,616 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:03,616 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:03,617 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:03,618 - root - WARNING - Invalid MSKU found in sales data: MH_A8_Brown
+2025-06-17 20:48:03,618 - root - WARNING - Invalid MSKU found in sales data: YOU ARE MY SUNSHINE SUN_BROWN
+2025-06-17 20:48:03,619 - root - WARNING - Invalid MSKU found in sales data: Fire Sunglasses-Green
+2025-06-17 20:48:03,620 - root - WARNING - Invalid MSKU found in sales data: redstawberry_softtoy
+2025-06-17 20:48:03,621 - root - WARNING - Invalid MSKU found in sales data: 69UfqNAh
+2025-06-17 20:48:03,621 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:03,622 - root - WARNING - Invalid MSKU found in sales data: 6CKGxkiA
+2025-06-17 20:48:03,622 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:03,623 - root - WARNING - Invalid MSKU found in sales data: 69UfqNAh
+2025-06-17 20:48:03,624 - root - WARNING - Invalid MSKU found in sales data: acrylic_heart_8note_kalimba
+2025-06-17 20:48:03,624 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:03,625 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:03,626 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:03,626 - root - WARNING - Invalid MSKU found in sales data: StorageBox_3
+2025-06-17 20:48:03,627 - root - INFO - No rows skipped due to invalid quantities.
+2025-06-17 20:48:03,628 - root - INFO - Processed 48 rows into 7 rows after expansion (skipped 0 invalid quantity rows)
+2025-06-17 20:48:04,618 - root - ERROR - Error in Streamlit app: 'field_4646908'
+Traceback (most recent call last):
+  File "D:\Projects2025\Assessment_17062025\app.py", line 198, in main
+    baserow_results = push_to_baserow(result_df, sales_file.name)
+  File "D:\Projects2025\Assessment_17062025\app.py", line 62, in push_to_baserow
+    entry["field_4646908"]
+    ~~~~~^^^^^^^^^^^^^^^^^
+KeyError: 'field_4646908'
+2025-06-17 20:48:55,242 - warehouse_management - INFO - Successfully loaded all Excel sheets
+2025-06-17 20:48:55,426 - warehouse_management - INFO - Built SKU to MSKU mapping with 3915 entries
+2025-06-17 20:48:55,452 - warehouse_management - INFO - Built combo expansion mapping with 375 entries
+2025-06-17 20:48:55,456 - warehouse_management - INFO - Built active MSKU set with 1011 entries
+2025-06-17 20:48:55,457 - root - WARNING - Invalid MSKU found in sales data: MONEY HEIST A-8_BROWN
+2025-06-17 20:48:55,458 - root - WARNING - Invalid MSKU found in sales data: 69UfqNAh
+2025-06-17 20:48:55,459 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:55,460 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:55,461 - root - WARNING - Invalid MSKU found in sales data: YOU ARE MY SUNSHINE SUN_BROWN
+2025-06-17 20:48:55,462 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:55,463 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:55,464 - root - WARNING - Invalid MSKU found in sales data: 6CKGxkiA
+2025-06-17 20:48:55,465 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:55,466 - root - WARNING - Invalid MSKU found in sales data: La Vie En Rose MB-Black
+2025-06-17 20:48:55,467 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:55,468 - root - WARNING - Invalid MSKU found in sales data: 1617749754_17
+2025-06-17 20:48:55,468 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:55,470 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:55,471 - root - WARNING - Invalid MSKU found in sales data: MH-LA CASA DE PAPEL_BROWN
+2025-06-17 20:48:55,472 - root - WARNING - Invalid MSKU found in sales data: MH_A8_Brown
+2025-06-17 20:48:55,473 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:55,474 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:55,479 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:55,481 - root - WARNING - Invalid MSKU found in sales data: 69UfqNAh
+2025-06-17 20:48:55,482 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:55,483 - root - WARNING - Invalid MSKU found in sales data: YouAreMySunshineMusicBox-Black
+2025-06-17 20:48:55,483 - root - WARNING - Invalid MSKU found in sales data: 69UfqNAh
+2025-06-17 20:48:55,485 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:55,485 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:55,485 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:55,486 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:55,487 - root - WARNING - Invalid MSKU found in sales data: MH_A8_Brown
+2025-06-17 20:48:55,488 - root - WARNING - Invalid MSKU found in sales data: YOU ARE MY SUNSHINE SUN_BROWN
+2025-06-17 20:48:55,489 - root - WARNING - Invalid MSKU found in sales data: Fire Sunglasses-Green
+2025-06-17 20:48:55,489 - root - WARNING - Invalid MSKU found in sales data: redstawberry_softtoy
+2025-06-17 20:48:55,489 - root - WARNING - Invalid MSKU found in sales data: 69UfqNAh
+2025-06-17 20:48:55,490 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:55,490 - root - WARNING - Invalid MSKU found in sales data: 6CKGxkiA
+2025-06-17 20:48:55,491 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:55,492 - root - WARNING - Invalid MSKU found in sales data: 69UfqNAh
+2025-06-17 20:48:55,493 - root - WARNING - Invalid MSKU found in sales data: acrylic_heart_8note_kalimba
+2025-06-17 20:48:55,493 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:55,494 - root - WARNING - Invalid MSKU found in sales data: SG_ButterFly_LightgreenPink
+2025-06-17 20:48:55,494 - root - WARNING - Invalid MSKU found in sales data: v1nepfRR
+2025-06-17 20:48:55,495 - root - WARNING - Invalid MSKU found in sales data: StorageBox_3
+2025-06-17 20:48:55,495 - root - INFO - No rows skipped due to invalid quantities.
+2025-06-17 20:48:55,496 - root - INFO - Processed 48 rows into 7 rows after expansion (skipped 0 invalid quantity rows)
