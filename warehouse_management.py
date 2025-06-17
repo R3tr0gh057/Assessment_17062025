@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from pathlib import Path
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(
@@ -34,8 +35,9 @@ class SKUMapper:
         
         # Initialize mapping dictionaries
         self.sku_to_msku_map = {}
+        self.msku_to_sku_map = {}
         self.combo_expansion_map = {}
-        self.active_mskus = set()
+        self.stock_levels = {}
         
         # Build mapping dictionaries
         self._build_mappings()
@@ -53,11 +55,9 @@ class SKUMapper:
             )
             
             # Load Current Inventory sheet
-            ci_df = pd.read_excel(self.excel_path, sheet_name="Current Inventory ", header=1)
-            if 'msku' in ci_df.columns:
-                self.current_inventory_df = ci_df[['msku']].rename(columns={'msku': 'MSKU'})
-            else:
-                raise ValueError("'msku' column not found in Current Inventory sheet")
+            self.current_inventory_df = pd.read_excel(self.excel_path, sheet_name="Current Inventory ", header=1)
+            if 'msku' not in self.current_inventory_df.columns or 'Opening Stock' not in self.current_inventory_df.columns:
+                raise ValueError("Required columns not found in Current Inventory sheet")
             
             # Load Combos skus sheet
             self.combos_df = pd.read_excel(self.excel_path, sheet_name="Combos skus")
@@ -82,30 +82,36 @@ class SKUMapper:
     
     def _build_mappings(self) -> None:
         """Build all necessary mapping dictionaries from the loaded data."""
-        # Build SKU to MSKU mapping from both Chronology and Msku With Skus
-        self._build_sku_to_msku_mapping()
+        # Build SKU to MSKU and MSKU to SKU mappings
+        self._build_sku_msku_mappings()
         
         # Build combo expansion mapping
         self._build_combo_expansion_mapping()
         
-        # Build active MSKU set
-        self._build_active_msku_set()
+        # Build stock levels
+        self._build_stock_levels()
     
-    def _build_sku_to_msku_mapping(self) -> None:
-        """Build mapping from SKUs to MSKUs using both Chronology and Msku With Skus sheets."""
+    def _build_sku_msku_mappings(self) -> None:
+        """Build bidirectional mappings between SKUs and MSKUs."""
         # Add mappings from Chronology sheet
         if not self.chronology_df.empty:
             for _, row in self.chronology_df.iterrows():
                 if pd.notna(row['SKU']) and pd.notna(row['MSKU']):
-                    self.sku_to_msku_map[str(row['SKU']).strip()] = str(row['MSKU']).strip()
+                    sku = str(row['SKU']).strip()
+                    msku = str(row['MSKU']).strip()
+                    self.sku_to_msku_map[sku] = msku
+                    self.msku_to_sku_map[msku] = sku
         
         # Add mappings from Msku With Skus sheet
         if not self.msku_with_skus_df.empty:
             for _, row in self.msku_with_skus_df.iterrows():
                 if pd.notna(row['SKU']) and pd.notna(row['MSKU']):
-                    self.sku_to_msku_map[str(row['SKU']).strip()] = str(row['MSKU']).strip()
+                    sku = str(row['SKU']).strip()
+                    msku = str(row['MSKU']).strip()
+                    self.sku_to_msku_map[sku] = msku
+                    self.msku_to_sku_map[msku] = sku
         
-        logger.info(f"Built SKU to MSKU mapping with {len(self.sku_to_msku_map)} entries")
+        logger.info(f"Built SKU/MSKU mappings with {len(self.sku_to_msku_map)} entries")
     
     def _build_combo_expansion_mapping(self) -> None:
         """Build mapping for expanding combo MSKUs into individual SKUs."""
@@ -120,66 +126,50 @@ class SKUMapper:
         
         logger.info(f"Built combo expansion mapping with {len(self.combo_expansion_map)} entries")
     
-    def _build_active_msku_set(self) -> None:
-        """Build set of active MSKUs from Current Inventory sheet."""
+    def _build_stock_levels(self) -> None:
+        """Build current stock levels from Current Inventory sheet."""
         if not self.current_inventory_df.empty:
-            self.active_mskus = set(
-                str(msku).strip() 
-                for msku in self.current_inventory_df['MSKU'] 
-                if pd.notna(msku)
-            )
-        logger.info(f"Built active MSKU set with {len(self.active_mskus)} entries")
+            for _, row in self.current_inventory_df.iterrows():
+                if pd.notna(row['msku']) and pd.notna(row['Opening Stock']):
+                    msku = str(row['msku']).strip()
+                    stock = int(row['Opening Stock'])
+                    self.stock_levels[msku] = stock
+        logger.info(f"Built stock levels with {len(self.stock_levels)} entries")
     
-    def expand_combo_msku(self, msku: str) -> List[str]:
-        """
-        Expand a combo MSKU into its constituent base SKUs.
-        
-        Args:
-            msku (str): The combo MSKU to expand
-            
-        Returns:
-            List[str]: List of base SKUs
-        """
-        return self.combo_expansion_map.get(msku, [msku])
+    def get_stock_level(self, msku: str) -> int:
+        """Get current stock level for an MSKU."""
+        return self.stock_levels.get(msku, 0)
     
-    def is_valid_msku(self, msku: str) -> bool:
-        """
-        Check if an MSKU is valid (exists in current inventory).
-        
-        Args:
-            msku (str): The MSKU to validate
-            
-        Returns:
-            bool: True if MSKU is valid, False otherwise
-        """
-        return msku in self.active_mskus
+    def update_stock_level(self, msku: str, quantity: int) -> int:
+        """Update stock level for an MSKU and return new level."""
+        current_stock = self.stock_levels.get(msku, 0)
+        new_stock = max(0, current_stock - quantity)  # Ensure stock doesn't go below 0
+        self.stock_levels[msku] = new_stock
+        return new_stock
 
-    def map_sku_to_msku(self, sku: str) -> str:
-        """
-        Map a SKU to its corresponding MSKU using the mapping dictionary.
-        Args:
-            sku (str): The SKU to map
-        Returns:
-            str: The mapped MSKU, or the input if not found
-        """
-        return self.sku_to_msku_map.get(sku, sku)
+def find_order_id_column(df: pd.DataFrame) -> Optional[str]:
+    """Find the column that likely contains order IDs."""
+    possible_columns = ['order', 'orderid', 'order_id', 'order no', 'order_no', 'order number']
+    for col in df.columns:
+        if any(keyword in col.lower() for keyword in possible_columns):
+            return col
+    return None
 
-def map_sales_data(df: pd.DataFrame, sku_mapper: SKUMapper) -> pd.DataFrame:
+def process_sales_data(df: pd.DataFrame, sku_mapper: SKUMapper, source_file: str) -> pd.DataFrame:
     """
-    Maps sales data SKUs to MSKUs and expands combo products.
+    Process sales data according to the new requirements.
     
     Args:
-        df: Sales DataFrame with SKU/MSKU and quantity columns
+        df: Sales DataFrame
         sku_mapper: Initialized SKUMapper instance
+        source_file: Name of the source CSV file
         
     Returns:
-        DataFrame with mapped MSKUs and expanded combos
+        DataFrame with processed data
     """
-    expanded_rows = []
-    skipped_rows = []
-    skipped_count = 0
+    processed_rows = []
     
-    # Detect the SKU/MSKU column based on keywords
+    # Find the SKU/MSKU column
     sku_column = None
     for col in df.columns:
         if 'sku' in col.lower():
@@ -188,76 +178,63 @@ def map_sales_data(df: pd.DataFrame, sku_mapper: SKUMapper) -> pd.DataFrame:
     if not sku_column:
         raise ValueError("No SKU/MSKU column found in the input DataFrame.")
     
-    for _, row in df.iterrows():
-        # Get the SKU/MSKU value
-        msku = row[sku_column]
-        # Convert quantity safely
+    # Find the order ID column
+    order_id_column = find_order_id_column(df)
+    if not order_id_column:
+        logger.warning("No order ID column found, using row number as order ID")
+    
+    # Find the date column
+    date_column = 'Date' if 'Date' in df.columns else df.columns[0]  # Use first column if no Date column
+    
+    for idx, row in df.iterrows():
         try:
-            quantity = int(row['Quantity'])
-        except Exception:
-            logging.warning(f"Could not convert quantity for row: {row}")
-            skipped_rows.append(row)
-            skipped_count += 1
-            continue
-        # Use a default date if 'Date' column is missing
-        date = row.get('Date', 'Unknown')
-        
-        # Skip if quantity is zero or negative
-        if quantity <= 0:
-            logging.warning(f"Skipping row with non-positive quantity: {row}")
-            skipped_rows.append(row)
-            skipped_count += 1
-            continue
-        
-        # Skip if MSKU is invalid
-        if not sku_mapper.is_valid_msku(msku):
-            logging.warning(f"Invalid MSKU found in sales data: {msku}")
-            continue
-        
-        # Handle combo MSKUs
-        if msku in sku_mapper.combo_expansion_map:
-            base_skus = sku_mapper.combo_expansion_map[msku]
-            for base_sku in base_skus:
-                if base_sku:  # Skip empty SKUs
-                    new_row = {
-                        'Date': date,
-                        'Mapped MSKU': base_sku,
-                        'Original SKU': msku,
-                        'Quantity': quantity,
-                        'Source': 'Combo Expansion'
-                    }
-                    expanded_rows.append(new_row)
-        else:
-            # Handle regular SKUs
-            mapped_msku = sku_mapper.map_sku_to_msku(msku)
-            if mapped_msku:
-                new_row = {
-                    'Date': date,
-                    'Mapped MSKU': mapped_msku,
-                    'Original SKU': msku,
-                    'Quantity': quantity,
-                    'Source': 'Direct Mapping'
-                }
-                expanded_rows.append(new_row)
+            # Get basic information
+            identifier = str(row[sku_column]).strip()
+            quantity = int(float(row['Quantity']))
+            date = row[date_column]
+            order_id = str(row[order_id_column]) if order_id_column else f"ORDER_{idx}"
+            
+            # Skip if quantity is invalid
+            if quantity <= 0:
+                logger.warning(f"Skipping row with invalid quantity: {row}")
+                continue
+            
+            # Determine if identifier is SKU or MSKU and get the corresponding mapping
+            if identifier in sku_mapper.sku_to_msku_map:
+                # It's a SKU, get the MSKU
+                msku = sku_mapper.sku_to_msku_map[identifier]
+                sku = identifier
+            elif identifier in sku_mapper.msku_to_sku_map:
+                # It's an MSKU, get the SKU
+                sku = sku_mapper.msku_to_sku_map[identifier]
+                msku = identifier
             else:
-                logging.warning(f"No mapping found for SKU: {msku}")
+                # Not found in either mapping
+                logger.warning(f"Identifier not found in mappings: {identifier}")
+                continue
+            
+            # Update stock level
+            stock_left = sku_mapper.update_stock_level(msku, quantity)
+            
+            # Create processed row
+            processed_row = {
+                'Date': date,
+                'Source': source_file,
+                'SKU': sku,
+                'MSKU': msku,
+                'Quantity': quantity,
+                'OrderID': order_id,
+                'StockLeft': stock_left
+            }
+            processed_rows.append(processed_row)
+            
+        except Exception as e:
+            logger.error(f"Error processing row {idx}: {str(e)}")
+            continue
     
-    # Save skipped rows with invalid quantities
-    if skipped_rows:
-        skipped_df = pd.DataFrame(skipped_rows)
-        skipped_df.to_csv("invalid_sales_rows.csv", index=False)
-        logging.info(f"Saved {skipped_count} skipped rows with invalid quantities to invalid_sales_rows.csv")
-    else:
-        logging.info("No rows skipped due to invalid quantities.")
-    
-    # Create DataFrame from expanded rows
-    if expanded_rows:
-        result_df = pd.DataFrame(expanded_rows)
-        logging.info(f"Processed {len(df)} rows into {len(result_df)} rows after expansion (skipped {skipped_count} invalid quantity rows)")
-        return result_df
-    else:
-        logging.warning("No valid mappings found in sales data")
-        return pd.DataFrame(columns=['Date', 'Mapped MSKU', 'Original SKU', 'Quantity', 'Source'])
+    # Create and return the processed DataFrame
+    result_df = pd.DataFrame(processed_rows)
+    return result_df
 
 def main():
     """Main function to process sales data."""
@@ -269,7 +246,7 @@ def main():
         sales_df = pd.read_csv("meesho.csv")
         
         # Map sales data
-        mapped_df = map_sales_data(sales_df, sku_mapper)
+        mapped_df = process_sales_data(sales_df, sku_mapper, "meesho.csv")
         
         # Save processed data
         mapped_df.to_csv("processed_sales.csv", index=False)

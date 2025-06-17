@@ -6302,3 +6302,8 @@ KeyError: 'field_4646908'
 2025-06-17 20:48:55,495 - root - WARNING - Invalid MSKU found in sales data: StorageBox_3
 2025-06-17 20:48:55,495 - root - INFO - No rows skipped due to invalid quantities.
 2025-06-17 20:48:55,496 - root - INFO - Processed 48 rows into 7 rows after expansion (skipped 0 invalid quantity rows)
+2025-06-17 21:27:14,300 - warehouse_management - INFO - Successfully loaded all Excel sheets
+2025-06-17 21:27:14,591 - warehouse_management - INFO - Built SKU/MSKU mappings with 3915 entries
+2025-06-17 21:27:14,637 - warehouse_management - INFO - Built combo expansion mapping with 375 entries
+2025-06-17 21:27:14,684 - warehouse_management - INFO - Built stock levels with 1011 entries
+2025-06-17 21:27:14,687 - warehouse_management - WARNING - Identifier not found in mappings: StorageBox_3
