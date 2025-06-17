@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Baserow configuration
-BASEROW_TOKEN = os.getenv('BASEROW_TOKEN')
-BASEROW_URL = os.getenv('BASEROW_URL')
-TABLE_ID = os.getenv('TABLE_ID')
+BASEROW_TOKEN = os.getenv('BASEROW_API_TOKEN')
+BASEROW_URL = "https://api.baserow.io"
+TABLE_ID = "577266"
 
 def load_excel_data(file_path):
     """Load data from Excel file."""
@@ -44,8 +44,8 @@ def load_csv_data(file_path):
 
 def push_to_baserow(df):
     """Push processed data to Baserow table."""
-    if not all([BASEROW_TOKEN, BASEROW_URL, TABLE_ID]):
-        st.error("Missing Baserow configuration. Please check your .env file.")
+    if not BASEROW_TOKEN:
+        st.error("Missing Baserow API token. Please check your .env file.")
         return False
     
     headers = {
@@ -61,7 +61,8 @@ def push_to_baserow(df):
         )
         response.raise_for_status()
         existing_records = response.json()
-        existing_skus = {record['Original SKU'] for record in existing_records.get('results', [])}
+        # Check for duplicates based on SKU
+        existing_skus = {record['field_4647812'] for record in existing_records.get('results', [])}
     except Exception as e:
         logger.error(f"Error fetching existing records: {str(e)}")
         st.error("Failed to fetch existing records from Baserow")
@@ -70,23 +71,43 @@ def push_to_baserow(df):
     success_count = 0
     error_count = 0
     
-    for _, row in df.iterrows():
+    for idx, row in df.iterrows():
         try:
             # Skip if this SKU already exists
             if row['SKU'] in existing_skus:
                 logger.info(f"Skipping duplicate SKU: {row['SKU']}")
                 continue
             
-            # Prepare the data for Baserow
+            # Convert date to YYYY-MM-DD format
+            try:
+                date_value = pd.to_datetime(row['Date']).strftime('%Y-%m-%d')
+            except:
+                date_value = datetime.now().strftime('%Y-%m-%d')
+            
+            # Convert quantity and stock to integers, with fallbacks
+            try:
+                quantity = int(float(row['Quantity']))
+            except:
+                quantity = 0
+                
+            try:
+                stock_left = max(0, int(float(row['StockLeft'])))
+            except:
+                stock_left = 0
+            
+            # Prepare the data for Baserow with the correct field IDs
             data = {
-                'Date': row['Date'],
-                'Source': row['Source'],
-                'Original SKU': row['SKU'],
-                'Mapped MSKU': row['MSKU'],
-                'Quantity': int(row['Quantity']),
-                'OrderID': row['OrderID'],
-                'StockLeft': int(row['StockLeft'])
+                'field_4647810': date_value,  # Date in YYYY-MM-DD format
+                'field_4647811': str(row['Source'])[:255],  # Source (truncate if too long)
+                'field_4647812': str(row['SKU'])[:255],  # Sku (truncate if too long)
+                'field_4647904': str(row['MSKU'])[:255],  # Msku (truncate if too long)
+                'field_4647908': quantity,  # Quantity as integer
+                'field_4647912': str(row['OrderID'])[:255],  # OrderID (truncate if too long)
+                'field_4647913': stock_left  # StockLeft as positive integer
             }
+            
+            # Log the data being sent
+            logger.info(f"Sending data for row {idx}: {data}")
             
             # Push to Baserow
             response = requests.post(
@@ -94,11 +115,16 @@ def push_to_baserow(df):
                 headers=headers,
                 json=data
             )
+            
+            if response.status_code != 200 and response.status_code != 201:
+                logger.error(f"Error response from Baserow: {response.text}")
+                raise Exception(f"Baserow API returned status code {response.status_code}")
+                
             response.raise_for_status()
             success_count += 1
             
         except Exception as e:
-            logger.error(f"Error pushing row to Baserow: {str(e)}")
+            logger.error(f"Error pushing row {idx} to Baserow: {str(e)}")
             error_count += 1
             continue
     
@@ -160,12 +186,12 @@ def main():
                         mime='text/csv'
                     )
                 
-                # Push to Baserow
-                if st.button("Push to Baserow"):
-                    if push_to_baserow(processed_df):
-                        st.success("Data successfully pushed to Baserow!")
-                    else:
-                        st.error("Failed to push data to Baserow. Check the logs for details.")
+                # Automatically push to Baserow
+                st.write("Pushing data to Baserow...")
+                if push_to_baserow(processed_df):
+                    st.success("Data successfully pushed to Baserow!")
+                else:
+                    st.error("Failed to push data to Baserow. Check the logs for details.")
                 
             except Exception as e:
                 st.error(f"Error processing data: {str(e)}")
