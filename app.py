@@ -136,67 +136,146 @@ def push_to_baserow(df):
     return success_count > 0
 
 def main():
-    st.title("Warehouse Management System")
-    
-    # File upload section
-    st.header("Upload Files")
-    
-    # Excel file upload
-    excel_file = st.file_uploader("Upload Excel File", type=['xlsx', 'xls'])
-    if excel_file:
-        excel_data = load_excel_data(excel_file)
-        if excel_data is not None:
-            st.success("Excel file loaded successfully!")
-            st.write("Excel Data Preview:")
-            st.dataframe(excel_data.head())
-    
-    # CSV file upload
-    csv_file = st.file_uploader("Upload CSV File", type=['csv'])
-    if csv_file:
-        csv_data = load_csv_data(csv_file)
-        if csv_data is not None:
-            st.success("CSV file loaded successfully!")
-            st.write("CSV Data Preview:")
-            st.dataframe(csv_data.head())
-    
-    # Process button
-    if st.button("Process Data"):
+    # Set page config
+    st.set_page_config(
+        page_title="Warehouse Management System",
+        page_icon="🏭",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+
+    # Custom CSS
+    st.markdown("""
+        <style>
+        .main {
+            padding: 2rem;
+        }
+        .stButton>button {
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .stButton>button:hover {
+            background-color: #45a049;
+        }
+        .success-box {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        .error-box {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Title and description
+    st.title("🏭 Warehouse Management System")
+    st.markdown("""
+        This application processes sales data by mapping SKUs to Master SKUs using a mapping file.
+        Upload your mapping file (Excel) and sales data (CSV) to get started.
+    """)
+
+    # Create two columns for file uploads
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("📊 Upload Mapping File")
+        excel_file = st.file_uploader(
+            "Choose Excel File",
+            type=['xlsx', 'xls'],
+            help="Upload the Excel file containing SKU mappings"
+        )
+        if excel_file:
+            excel_data = load_excel_data(excel_file)
+            if excel_data is not None:
+                st.markdown('<div class="success-box">Excel file loaded successfully!</div>', unsafe_allow_html=True)
+                with st.expander("View Excel Data Preview"):
+                    st.dataframe(excel_data.head(), use_container_width=True)
+
+    with col2:
+        st.subheader("📈 Upload Sales Data")
+        csv_file = st.file_uploader(
+            "Choose CSV File",
+            type=['csv'],
+            help="Upload the CSV file containing sales data"
+        )
+        if csv_file:
+            csv_data = load_csv_data(csv_file)
+            if csv_data is not None:
+                st.markdown('<div class="success-box">CSV file loaded successfully!</div>', unsafe_allow_html=True)
+                with st.expander("View CSV Data Preview"):
+                    st.dataframe(csv_data.head(), use_container_width=True)
+
+    # Process button with custom styling
+    st.markdown("---")
+    if st.button("🔄 Process Data", use_container_width=True):
         if excel_file and csv_file:
             try:
-                # Initialize SKUMapper with Excel data
-                sku_mapper = SKUMapper(excel_file)
-                
-                # Process CSV data
-                processed_df = process_sales_data(csv_data, sku_mapper, csv_file.name)
-                
-                # Display processed data
-                st.write("Processed Data Preview:")
-                st.dataframe(processed_df.head())
-                
-                # Save processed data to CSV
-                output_filename = f"processed_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-                processed_df.to_csv(output_filename, index=False)
-                
-                # Provide download link
-                with open(output_filename, 'rb') as f:
-                    st.download_button(
-                        label="Download Processed Data",
-                        data=f,
-                        file_name=output_filename,
-                        mime='text/csv'
-                    )
-                
-                # Automatically push to Baserow
-                st.write("Pushing data to Baserow...")
-                if push_to_baserow(processed_df):
-                    st.success("Data successfully pushed to Baserow!")
-                else:
-                    st.error("Failed to push data to Baserow. Check the logs for details.")
+                with st.spinner("Processing data..."):
+                    # Initialize SKUMapper with Excel data
+                    sku_mapper = SKUMapper(excel_file)
+                    
+                    # Process CSV data
+                    processed_df = process_sales_data(csv_data, sku_mapper, csv_file.name)
+                    
+                    # Display processed data
+                    st.subheader("📊 Processed Data Preview")
+                    st.dataframe(processed_df.head(), use_container_width=True)
+                    
+                    # Save processed data to CSV
+                    output_filename = f"processed_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                    processed_df.to_csv(output_filename, index=False)
+                    
+                    # Provide download link
+                    with open(output_filename, 'rb') as f:
+                        st.download_button(
+                            label="⬇️ Download Processed Data",
+                            data=f,
+                            file_name=output_filename,
+                            mime='text/csv',
+                            use_container_width=True
+                        )
+                    
+                    # Push to Baserow
+                    st.markdown("---")
+                    st.subheader("🔄 Pushing to Baserow")
+                    with st.spinner("Pushing data to Baserow..."):
+                        if push_to_baserow(processed_df):
+                            st.markdown('<div class="success-box">Data successfully pushed to Baserow!</div>', unsafe_allow_html=True)
+                        else:
+                            st.markdown('<div class="error-box">Failed to push data to Baserow. Check the logs for details.</div>', unsafe_allow_html=True)
                 
             except Exception as e:
-                st.error(f"Error processing data: {str(e)}")
+                st.markdown(f'<div class="error-box">Error processing data: {str(e)}</div>', unsafe_allow_html=True)
         else:
-            st.warning("Please upload both Excel and CSV files to process data.")
+            st.markdown('<div class="warning-box">Please upload both Excel and CSV files to process data.</div>', unsafe_allow_html=True)
+
+    # Footer
+    st.markdown("---")
+    st.markdown("""
+        <div style='text-align: center; color: #666;'>
+            Warehouse Management System | Built with Streamlit
+        </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main() 
