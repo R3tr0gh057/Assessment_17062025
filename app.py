@@ -2,18 +2,41 @@ import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-from warehouse_management import SKUMapper, process_sales_data
+from warehouse_management import SKUMapper, process_sales_data, fetch_baserow_stock_levels
 import requests
 from dotenv import load_dotenv
 import logging
+import io
+from collections import deque
+
+skipcounter = 0
+# Custom logging handler to capture logs in memory
+class StreamlitLogHandler(logging.Handler):
+    def __init__(self, max_logs=1000):
+        super().__init__()
+        self.log_buffer = deque(maxlen=max_logs)
+        
+    def emit(self, record):
+        log_entry = self.format(record)
+        self.log_buffer.append(log_entry)
+        
+    def get_logs(self):
+        return list(self.log_buffer)
+    
+    def clear_logs(self):
+        self.log_buffer.clear()
+
+# Initialize the custom log handler
+st_log_handler = StreamlitLogHandler()
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('app.log'),
-        logging.StreamHandler()
+        logging.FileHandler('warehouse_management.log'),
+        logging.StreamHandler(),
+        st_log_handler  # Add our custom handler
     ]
 )
 logger = logging.getLogger(__name__)
@@ -42,11 +65,19 @@ def load_csv_data(file_path):
         st.error(f"Error loading CSV file: {str(e)}")
         return None
 
+# Helper to read last N lines from a log file
+def read_last_n_lines(filename, n=200):
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            return ''.join(f.readlines()[-n:])
+    except Exception:
+        return 'No logs available.'
+
 def push_to_baserow(df):
     """Push processed data to Baserow table."""
     if not BASEROW_TOKEN:
         st.error("Missing Baserow API token. Please check your .env file.")
-        return False
+        return {"success": 0, "skipped": 0, "error": 1}
     
     headers = {
         'Authorization': f'Token {BASEROW_TOKEN}',
@@ -66,35 +97,40 @@ def push_to_baserow(df):
     except Exception as e:
         logger.error(f"Error fetching existing records: {str(e)}")
         st.error("Failed to fetch existing records from Baserow")
-        return False
+        return {"success": 0, "skipped": 0, "error": 1}
     
     success_count = 0
     error_count = 0
+    skipped_duplicates = 0
+    skipped_empty = 0
+    total_rows = len(df)
     
     for idx, row in df.iterrows():
+        # Skip if this SKU already exists
+        if row['SKU'] in existing_skus:
+            logger.info(f"Skipping duplicate SKU: {row['SKU']}")
+            skipped_duplicates += 1
+            continue
+        # Skip if quantity is NaN or 0
+        if pd.isna(row['Quantity']) or row['Quantity'] == 0:
+            logger.info(f"Skipping empty/NaN quantity for SKU: {row['SKU']}")
+            skipped_empty += 1
+            continue
         try:
-            # Skip if this SKU already exists
-            if row['SKU'] in existing_skus:
-                logger.info(f"Skipping duplicate SKU: {row['SKU']}")
-                continue
-            
             # Convert date to YYYY-MM-DD format
             try:
                 date_value = pd.to_datetime(row['Date']).strftime('%Y-%m-%d')
             except:
                 date_value = datetime.now().strftime('%Y-%m-%d')
-            
             # Convert quantity and stock to integers, with fallbacks
             try:
                 quantity = int(float(row['Quantity']))
             except:
                 quantity = 0
-                
             try:
                 stock_left = max(0, int(float(row['StockLeft'])))
             except:
                 stock_left = 0
-            
             # Prepare the data for Baserow with the correct field IDs
             data = {
                 'field_4647810': date_value,  # Date in YYYY-MM-DD format
@@ -105,35 +141,24 @@ def push_to_baserow(df):
                 'field_4647912': str(row['OrderID'])[:255],  # OrderID (truncate if too long)
                 'field_4647913': stock_left  # StockLeft as positive integer
             }
-            
             # Log the data being sent
             logger.info(f"Sending data for row {idx}: {data}")
-            
             # Push to Baserow
             response = requests.post(
                 f"{BASEROW_URL}/api/database/rows/table/{TABLE_ID}/",
                 headers=headers,
                 json=data
             )
-            
             if response.status_code != 200 and response.status_code != 201:
                 logger.error(f"Error response from Baserow: {response.text}")
                 raise Exception(f"Baserow API returned status code {response.status_code}")
-                
             response.raise_for_status()
             success_count += 1
-            
         except Exception as e:
             logger.error(f"Error pushing row {idx} to Baserow: {str(e)}")
             error_count += 1
             continue
-    
-    if success_count > 0:
-        st.success(f"Successfully pushed {success_count} records to Baserow")
-    if error_count > 0:
-        st.warning(f"Failed to push {error_count} records to Baserow")
-    
-    return success_count > 0
+    return {"success": success_count, "skipped": skipped_duplicates + skipped_empty, "error": error_count}
 
 def main():
     # Set page config
@@ -233,7 +258,9 @@ def main():
                 with st.spinner("Processing data..."):
                     # Initialize SKUMapper with Excel data
                     sku_mapper = SKUMapper(excel_file)
-                    
+                    # Fetch latest stock from Baserow
+                    baserow_stock = fetch_baserow_stock_levels(BASEROW_TOKEN, TABLE_ID, BASEROW_URL)
+                    sku_mapper.set_stock_levels(baserow_stock)
                     # Process CSV data
                     processed_df = process_sales_data(csv_data, sku_mapper, csv_file.name)
                     
@@ -241,8 +268,10 @@ def main():
                     st.subheader("📊 Processed Data Preview")
                     st.dataframe(processed_df.head(), use_container_width=True)
                     
-                    # Save processed data to CSV
-                    output_filename = f"processed_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                    # Save processed data to LocalOutput folder
+                    output_dir = "LocalOutput"
+                    os.makedirs(output_dir, exist_ok=True)
+                    output_filename = os.path.join(output_dir, f"processed_data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
                     processed_df.to_csv(output_filename, index=False)
                     
                     # Provide download link
@@ -250,7 +279,7 @@ def main():
                         st.download_button(
                             label="⬇️ Download Processed Data",
                             data=f,
-                            file_name=output_filename,
+                            file_name=os.path.basename(output_filename),
                             mime='text/csv',
                             use_container_width=True
                         )
@@ -259,9 +288,12 @@ def main():
                     st.markdown("---")
                     st.subheader("🔄 Pushing to Baserow")
                     with st.spinner("Pushing data to Baserow..."):
-                        if push_to_baserow(processed_df):
+                        push_result = push_to_baserow(processed_df)
+                        if push_result["success"] > 0:
                             st.markdown('<div class="success-box">Data successfully pushed to Baserow!</div>', unsafe_allow_html=True)
-                        else:
+                        elif push_result["skipped"] == len(processed_df):
+                            st.markdown('<div class="warning-box">All rows were skipped due to duplicates or empty columns. No new data was pushed.</div>', unsafe_allow_html=True)
+                        elif push_result["error"] > 0:
                             st.markdown('<div class="error-box">Failed to push data to Baserow. Check the logs for details.</div>', unsafe_allow_html=True)
                 
             except Exception as e:
@@ -271,6 +303,20 @@ def main():
 
     # Footer
     st.markdown("---")
+    
+    # Log Window Dropdown
+    with st.expander("📋 View Processing Logs", expanded=False):
+        log_text = read_last_n_lines('warehouse_management.log', n=200)
+        st.text_area(
+            "Processing Logs",
+            value=log_text,
+            height=300,
+            help="View detailed processing logs including skipped rows, errors, and warnings"
+        )
+        if st.button("🗑️ Clear Logs", key="clear_logs"):
+            open('warehouse_management.log', 'w').close()
+            st.rerun()
+    
     st.markdown("""
         <div style='text-align: center; color: #666;'>
             Warehouse Management System | Built with Streamlit

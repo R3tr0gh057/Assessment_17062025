@@ -31,6 +31,8 @@ This project was built using Cursor IDE's AI capabilities:
 - Modern, responsive UI
 - Comprehensive error handling
 - Detailed logging
+- **NEW:** Always fetches latest stock for every SKU/MSKU from Baserow before processing new sales data
+- **NEW:** Processed files are saved in the `LocalOutput` folder
 
 ## 🛠️ Setup
 
@@ -139,3 +141,10 @@ Logs are stored in:
 
 ## Demo Video
 https://drive.google.com/file/d/1EPAHLgf-8Fs1dvHs47Bw7SLKqPZr8L-6/view?usp=sharing
+
+## Output
+- Processed CSVs are saved in the `LocalOutput` folder.
+- Download links are provided in the app.
+
+## Versioning
+See `CHANGELOG.md` for version history and updates.

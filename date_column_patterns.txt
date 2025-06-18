@@ -1,0 +1,22 @@
+# Date Column Patterns
+# This file contains patterns to identify date columns in CSV files
+# Each line represents a pattern to match against column names
+# Patterns are case-insensitive and use partial matching
+# Higher priority patterns (exact matches) should be listed first
+
+date
+order date
+invoice date
+dispatch date
+shipped date
+delivery date
+created date
+updated date
+# Lower priority (datetime/timestamp columns)
+date and time
+datetime
+timestamp
+order datetime
+invoice datetime
+created datetime
+updated datetime 
