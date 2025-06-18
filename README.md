@@ -37,7 +37,7 @@ This project was built using Cursor IDE's AI capabilities:
 1. **Clone the repository**
    ```bash
    git clone https://github.com/R3tr0gh057/Assessment_17062025
-   cd warehouse-management-system
+   cd Assessment_17062025
    ```
 
 2. **Create a virtual environment**
